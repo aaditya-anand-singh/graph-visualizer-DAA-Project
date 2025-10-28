@@ -1,5 +1,13 @@
 import React, { useEffect, useRef, useState, useCallback } from "react";
+
+// Utility to convert **text** to <strong>text</strong> for HTML rendering
+const formatLogLine = (line) => {
+  // Regex to find content wrapped in **...** (but not empty) and replace with <strong> tags
+  return line.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+};
+
 const getLabel = (i) => String.fromCharCode(65 + i);
+
 const LogBox = React.memo(({ processLog, selectedAlgo }) => {
   const logRef = useRef(null);
   useEffect(() => {
@@ -77,6 +85,15 @@ const LogBox = React.memo(({ processLog, selectedAlgo }) => {
         .toggle-switch-container input[type="checkbox"]:disabled {
              opacity: 0.5;
              cursor: not-allowed;
+        }
+        /* Custom Bolding for LogBox */
+        .bg-gray-50 strong {
+            color: #0c4a6e; /* Darker blue/cyan for contrast */
+            font-weight: 800; /* Extra bold */
+            padding: 0 2px;
+            border-radius: 2px;
+            background-color: #bfdbfe; /* Light blue background for emphasis */
+            box-shadow: 0 1px 1px rgba(0, 0, 0, 0.05);
         }
       `}</style>
     </section>
@@ -169,7 +186,7 @@ export default function App() {
   // Parse all edges from input and begin visual creation
   const parseEdges = async () => {
     if (isAnimating) {
-        setProcessLog((p) => [...p, "🛑 Animation in progress — wait until it finishes."]);
+        setProcessLog((p) => [...p, formatLogLine("🛑 Animation in progress — wait until it finishes.")]);
         return;
     }
 
@@ -180,18 +197,18 @@ export default function App() {
     // Validation checks... 
     const startChar = startNode.charCodeAt(0);
     if (startChar < 65 || startChar - 65 >= vertexCount) {
-        setProcessLog((p) => [...p, `❌ Starting node ${startNode} is invalid for ${vertexCount} vertices.`]);
+        setProcessLog((p) => [...p, formatLogLine(`❌ Starting node ${startNode} is invalid for ${vertexCount} vertices.`)]);
         return;
     }
     const targetChar = targetNode.charCodeAt(0);
     if (targetChar < 65 || targetChar - 65 >= vertexCount) {
-        setProcessLog((p) => [...p, `❌ Target node ${targetNode} is invalid for ${vertexCount} vertices.`]);
+        setProcessLog((p) => [...p, formatLogLine(`❌ Target node ${targetNode} is invalid for ${vertexCount} vertices.`)]);
         return;
     }
 
     setEdges([]);
     setSelectedAlgo("");
-    setProcessLog(["Parsing edges..."]);
+    setProcessLog([formatLogLine("Parsing edges...")]);
     setFinalPathEdges([]); 
     setBuiltPathEdges([]); 
     setTotalDistance(null); 
@@ -202,7 +219,7 @@ export default function App() {
     await animateInputParsing(parsed);
     
     setEdges(parsed);
-    setProcessLog((p) => [...p, `✅ Parsed ${parsed.length} edges successfully. Ready to run algorithms.`]);
+    setProcessLog((p) => [...p, formatLogLine(`✅ Parsed ${parsed.length} edges successfully. Ready to run algorithms.`)]);
   };
 
   // Animate edge creation one by one
@@ -211,7 +228,7 @@ export default function App() {
     for (let i = 0; i < parsedEdges.length; i++) {
       const e = parsedEdges[i];
       setEdges((prev) => [...prev, e]);
-      setProcessLog((prev) => [...prev, `➕ Added edge ${e.from}${e.directed ? "→" : "–"}${e.to} (w=${e.weight})`]);
+      setProcessLog((prev) => [...prev, formatLogLine(`➕ Added edge ${e.from}${e.directed ? "→" : "–"}${e.to} (w=${e.weight})`)]);
       drawGraph([], [], parsedEdges.slice(0, i + 1), [], [], []); 
       // eslint-disable-next-line no-await-in-loop
       await delay(200); 
@@ -370,7 +387,7 @@ export default function App() {
   // --- Reset Function ---
   const resetState = () => {
     if (isAnimating) {
-        setProcessLog((p) => [...p, "🛑 Animation in progress — cannot reset now."]);
+        setProcessLog((p) => [...p, formatLogLine("🛑 Animation in progress — cannot reset now.")]);
         return;
     }
     setVertexCount(5);
@@ -379,7 +396,7 @@ export default function App() {
     setEdgesInput("A->B=4, B->C=2, C->D=3, D->A=5, A->E=10");
     setEdges([]);
     setSelectedAlgo("");
-    setProcessLog(["Application state reset. Define a new graph to begin."]);
+    setProcessLog([formatLogLine("Application state reset. Define a new graph to begin.")]);
     setIsAnimating(false);
     setFinalPathEdges([]);
     setBuiltPathEdges([]);
@@ -402,7 +419,7 @@ export default function App() {
   // Dijkstra Algorithm (weighted shortest path)
   const runDijkstra = async () => {
     if (edges.length === 0) {
-      setProcessLog((p) => [...p, "🛑 No edges defined. Please render the graph first."]);
+      setProcessLog((p) => [...p, formatLogLine("🛑 No edges defined. Please render the graph first.")]);
       return;
     }
     
@@ -414,7 +431,7 @@ export default function App() {
     setStepIndex(0);
 
     setIsAnimating(true);
-    setProcessLog([`Running Dijkstra's Algorithm from starting node **${startNode}** to target node **${targetNode}**...`]);
+    setProcessLog([formatLogLine(`Running Dijkstra's Algorithm from starting node **${startNode}** to target node **${targetNode}**...`)]);
 
     const n = Math.max(1, Math.floor(Number(vertexCount) || 1));
     const vertices = Array.from({ length: n }, (_, i) => getLabel(i));
@@ -447,7 +464,7 @@ export default function App() {
       });
 
       if (dist[current] === Infinity) {
-        setProcessLog((p) => [...p, `No more reachable nodes from **${start}**. Algorithm terminates.`]);
+        setProcessLog((p) => [...p, formatLogLine(`No more reachable nodes from **${start}**. Algorithm terminates.`)]);
         break;
       }
 
@@ -455,7 +472,7 @@ export default function App() {
       visited.push(current);
       // Redraw showing the current node as selected (amber/yellow)
       drawGraph([current], visited.filter(v => v !== current), edges, finalPathEdges, [], currentBuiltPathEdges); 
-      setProcessLog((prev) => [...prev, `➡️ **SELECT**: Visiting **${current}**. This is the unvisited node with the smallest known distance (**${dist[current]}**).`]);
+      setProcessLog((prev) => [...prev, formatLogLine(`➡️ **SELECT**: Visiting **${current}**. This is the unvisited node with the smallest known distance (**${dist[current]}**).`)]);
       // eslint-disable-next-line no-await-in-loop
       await delay(animationSpeed * 1.5); // Slightly longer pause for the main step
       
@@ -474,7 +491,7 @@ export default function App() {
                 const newDist = dist[current] + weight;
                 const isShorter = newDist < dist[nextNode];
 
-                let logMessage = `   ❌ Checking ${u}${e.directed ? "→" : "–"}${v} (w=${weight}). Path distance: ${dist[current]} + ${weight} is **not shorter** than current dist of ${v} (${dist[nextNode] === Infinity ? "∞" : dist[nextNode]}).`;
+                let logMessage = formatLogLine(`   ❌ Checking ${u}${e.directed ? "→" : "–"}${v} (w=${weight}). Path distance: ${dist[current]} + ${weight} is **not shorter** than current dist of ${v} (${dist[nextNode] === Infinity ? "∞" : dist[nextNode]}).`);
 
                 if (isShorter) {
                   
@@ -496,7 +513,7 @@ export default function App() {
                         currentBuiltPathEdges.push(newEdge);
                     }
                     
-                    logMessage = `   ✅ **RELAXED**: ${u}${e.directed ? "→" : "–"}${v} (w=${weight}). Path is shorter. Updated dist of **${v}** to **${dist[v]}**.`;
+                    logMessage = formatLogLine(`   ✅ **RELAXED**: ${u}${e.directed ? "→" : "–"}${v} (w=${weight}). Path is shorter. Updated dist of **${v}** to **${dist[v]}**.`);
                 } 
 
                 // Draw with step highlight (bright green edge) and the updated currentBuiltPathEdges
@@ -530,7 +547,7 @@ export default function App() {
 
       // If we reached the target node, we can break early
       if (current === end) {
-        setProcessLog((p) => [...p, `🎉 Reached target node **${end}**. Path found.`]);
+        setProcessLog((p) => [...p, formatLogLine(`🎉 Reached target node **${end}**. Path found.`)]);
         break;
       }
 
@@ -539,7 +556,7 @@ export default function App() {
     // POST ALGORITHM PATH RECONSTRUCTION & HIGHLIGHTING
     let calculatedPathEdges = [];
     if (dist[end] === Infinity) {
-        setProcessLog((p) => [...p, `❌ Cannot reach node **${end}** from **${start}**.`]);
+        setProcessLog((p) => [...p, formatLogLine(`❌ Cannot reach node **${end}** from **${start}**.`)]);
     } else {
         let currentPathNode = end;
         let pathNodes = []; 
@@ -562,8 +579,8 @@ export default function App() {
         }
 
         const pathString = [start, ...pathNodes].join(" → ");
-        setProcessLog((prev) => [...prev, `Shortest Path: **${pathString}**`]);
-        setProcessLog((prev) => [...prev, `🎉 Shortest Distance from **${start}** to **${end}** is **${dist[end]}**. Path highlighted.`]);
+        setProcessLog((prev) => [...prev, formatLogLine(`Shortest Path: **${pathString}**`)]);
+        setProcessLog((prev) => [...prev, formatLogLine(`🎉 Shortest Distance from **${start}** to **${end}** is **${dist[end]}**. Path highlighted.`)]);
         
         setTotalDistance(dist[end]); 
         setFinalPathEdges(calculatedPathEdges);
@@ -590,7 +607,7 @@ export default function App() {
   // Greedy Simulation (simple traversal starting from the selected node) - Kept mostly as is
   const runGreedy = async () => {
     if (edges.length === 0) {
-      setProcessLog((p) => [...p, "🛑 No edges defined. Please render the graph first."]);
+      setProcessLog((p) => [...p, formatLogLine("🛑 No edges defined. Please render the graph first.")]);
       return;
     }
     
@@ -601,7 +618,7 @@ export default function App() {
     setStepLog([]);
     setStepIndex(0);
     setIsAnimating(true);
-    setProcessLog([`Running Greedy Traversal Simulation from **${startNode}**...`]);
+    setProcessLog([formatLogLine(`Running Greedy Traversal Simulation from **${startNode}**...`)]);
     
     const start = startNode;
     const visited = [start];
@@ -609,7 +626,7 @@ export default function App() {
     let currentBuiltPathEdges = [];
     
     drawGraph([start], visited, edges, [], [], currentBuiltPathEdges);
-    setProcessLog((p) => [...p, `➡️ Starting at vertex **${start}**.`]);
+    setProcessLog((p) => [...p, formatLogLine(`➡️ Starting at vertex **${start}**.`)]);
     await delay(); 
 
     while (queue.length > 0) {
@@ -634,7 +651,7 @@ export default function App() {
         await delay(100);
 
         if (neighbors.length === 0) {
-             setProcessLog((p) => [...p, `   🛑 **${current}** has no unvisited neighbors. Backtracking/Terminating path.`]);
+             setProcessLog((p) => [...p, formatLogLine(`   🛑 **${current}** has no unvisited neighbors. Backtracking/Terminating path.`)]);
         }
 
 
@@ -651,7 +668,7 @@ export default function App() {
                 const currentEdgeHighlight = [{ from: from, to: next }];
                 drawGraph([current, next], visited.filter(v => v !== next), edges, finalPathEdges, currentEdgeHighlight, currentBuiltPathEdges);
                 
-                setProcessLog((p) => [...p, `   Exploring from **${current}**: Greedily selected neighbor **${next}** (weight: **${weight}**).`]);
+                setProcessLog((p) => [...p, formatLogLine(`   Exploring from **${current}**: Greedily selected neighbor **${next}** (weight: **${weight}**).`)]);
                 // eslint-disable-next-line no-await-in-loop
                 await delay(animationSpeed * 0.75); 
                 
@@ -665,13 +682,13 @@ export default function App() {
         drawGraph([], visited, edges, finalPathEdges, [], currentBuiltPathEdges);
     }
     
-    setProcessLog((p) => [...p, "✨ Greedy Traversal Simulation Completed! All reachable nodes visited."]);
+    setProcessLog((p) => [...p, formatLogLine("✨ Greedy Traversal Simulation Completed! All reachable nodes visited.")]);
     setIsAnimating(false);
   };
 
   const handleAlgo = (algo) => {
     if (isAnimating) {
-      setProcessLog((p) => [...p, "🛑 Animation in progress — wait until it finishes."]);
+      setProcessLog((p) => [...p, formatLogLine("🛑 Animation in progress — wait until it finishes.")]);
       return;
     }
     setSelectedAlgo(algo);
